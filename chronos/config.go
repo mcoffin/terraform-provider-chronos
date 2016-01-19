@@ -46,12 +46,12 @@ func (c Config) getJob(jobName string) (*job, error) {
 		return nil, err
 	}
 
-	_, err = http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	decoder := json.NewDecoder(req.Body)
+	decoder := json.NewDecoder(resp.Body)
 	var js []job
 	err = decoder.Decode(&js)
 	if err != nil {

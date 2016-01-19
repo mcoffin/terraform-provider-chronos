@@ -12,11 +12,17 @@ type job struct {
 	Schedule string `json:"schedule"`
 	Name string `json:"name"`
 	Cpus float64 `json:"cpus"`
-	Mem int `json:"mem"`
-	Disk int `json:"disk"`
+	Mem float64 `json:"mem"`
+	Disk float64 `json:"disk"`
 	Uris []string `json:"uris"`
 	Container container `json:"container"`
 	Command string `json:"command"`
+	Env []envEntry `json:"environmentVariables"`
+}
+
+type envEntry struct {
+	Name string `json:"name"`
+	Value string `json:"value"`
 }
 
 type container struct {
@@ -56,12 +62,12 @@ func resourceChronosJob() *schema.Resource {
 				ForceNew: false,
 			},
 			"mem": &schema.Schema{
-				Type: schema.TypeInt,
+				Type: schema.TypeFloat,
 				Required: true,
 				ForceNew: false,
 			},
 			"disk": &schema.Schema{
-				Type: schema.TypeInt,
+				Type: schema.TypeFloat,
 				Required: true,
 				ForceNew: false,
 			},
@@ -127,6 +133,11 @@ func resourceChronosJob() *schema.Resource {
 				Required: true,
 				ForceNew: false,
 			},
+			"env": &schema.Schema{
+				Type: schema.TypeMap,
+				Required: true,
+				ForceNew: false,
+			},
 		},
 	}
 }
@@ -147,11 +158,11 @@ func jobFromResource(rd *schema.ResourceData) *job {
 	}
 
 	if v, ok := rd.GetOk("mem"); ok {
-		j.Mem = v.(int)
+		j.Mem = v.(float64)
 	}
 
 	if v, ok := rd.GetOk("disk"); ok {
-		j.Disk = v.(int)
+		j.Disk = v.(float64)
 	}
 
 	if v, ok := rd.GetOk("command"); ok {
@@ -164,6 +175,22 @@ func jobFromResource(rd *schema.ResourceData) *job {
 			uris[i] = rd.Get(fmt.Sprintf("uris.%d", i)).(string)
 		}
 		j.Uris = uris
+	}
+
+	if v, ok := rd.GetOk("env"); ok {
+		envMap := v.(map[string]interface{})
+		env := make([]envEntry, len(envMap))
+		i := 0
+		for k, v := range envMap {
+			e := envEntry{
+				Name: k,
+				Value: v.(string),
+			}
+
+			env[i] = e
+			i++
+		}
+		j.Env = env
 	}
 
 	c := new(container)
@@ -218,6 +245,12 @@ func setSchemaFieldsForJob(j *job, rd *schema.ResourceData) {
 	setAndPartial(rd, "uris", j.Uris)
 	setAndPartial(rd, "command", j.Command)
 
+	envMap := make(map[string]interface{})
+	for _, e := range j.Env {
+		envMap[e.Name] = e.Value
+	}
+	setAndPartial(rd, "env", envMap)
+
 	containerMap := make(map[string]interface{})
 	containerMap["type"] = j.Container.Type
 	containerMap["image"] = j.Container.Image
@@ -261,7 +294,7 @@ func resourceChronosJobCreate(rd *schema.ResourceData, meta interface{}) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if err = checkStatusCodeIsSuccessful(resp.StatusCode); err != nil {
