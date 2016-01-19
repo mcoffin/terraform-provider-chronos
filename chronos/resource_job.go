@@ -16,6 +16,7 @@ type job struct {
 	Disk int `json:"disk"`
 	Uris []string `json:"uris"`
 	Container container `json:"container"`
+	Command string `json:"command"`
 }
 
 type container struct {
@@ -121,6 +122,11 @@ func resourceChronosJob() *schema.Resource {
 					},
 				},
 			},
+			"command": &schema.Schema{
+				Type: schema.TypeString,
+				Required: true,
+				ForceNew: false,
+			},
 		},
 	}
 }
@@ -146,6 +152,10 @@ func jobFromResource(rd *schema.ResourceData) *job {
 
 	if v, ok := rd.GetOk("disk"); ok {
 		j.Disk = v.(int)
+	}
+
+	if v, ok := rd.GetOk("command"); ok {
+		j.Command = v.(string)
 	}
 
 	if v, ok := rd.GetOk("uris.#"); ok {
@@ -206,6 +216,7 @@ func setSchemaFieldsForJob(j *job, rd *schema.ResourceData) {
 	setAndPartial(rd, "mem", j.Mem)
 	setAndPartial(rd, "disk", j.Disk)
 	setAndPartial(rd, "uris", j.Uris)
+	setAndPartial(rd, "command", j.Command)
 
 	containerMap := make(map[string]interface{})
 	containerMap["type"] = j.Container.Type
