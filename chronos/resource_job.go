@@ -193,40 +193,42 @@ func jobFromResource(rd *schema.ResourceData) *job {
 		j.Env = env
 	}
 
-	c := new(container)
+	if v, ok := rd.GetOk("container.#"); ok && v.(int) == 1 {
+		c := new(container)
 
-	if v, ok := rd.GetOk("container.0.type"); ok {
-		c.Type = v.(string)
-	}
-
-	if v, ok := rd.GetOk("container.0.image"); ok {
-		c.Image = v.(string)
-	}
-
-	if v, ok := rd.GetOk("container.0.network"); ok {
-		c.Network = v.(string)
-	}
-
-	if v, ok := rd.GetOk("container.0.force_pull_image"); ok {
-		c.ForcePullImage = v.(bool)
-	}
-
-	if v, ok := rd.GetOk("container.0.volume.#"); ok {
-		volumes := make([]volume, v.(int))
-
-		for i, _ := range volumes {
-			vol := volume{
-				ContainerPath: rd.Get(fmt.Sprintf("container.0.volume.%d.container_path")).(string),
-				HostPath: rd.Get(fmt.Sprintf("container.0.volume.%d.host_path")).(string),
-				Mode: rd.Get(fmt.Sprintf("container.0.volume.%d.mode")).(string),
-			}
-			volumes[i] = vol
+		if v, ok := rd.GetOk("container.0.type"); ok {
+			c.Type = v.(string)
 		}
 
-		c.Volumes = volumes
-	}
+		if v, ok := rd.GetOk("container.0.image"); ok {
+			c.Image = v.(string)
+		}
 
-	j.Container = *c
+		if v, ok := rd.GetOk("container.0.network"); ok {
+			c.Network = v.(string)
+		}
+
+		if v, ok := rd.GetOk("container.0.force_pull_image"); ok {
+			c.ForcePullImage = v.(bool)
+		}
+
+		if v, ok := rd.GetOk("container.0.volume.#"); ok {
+			volumes := make([]volume, v.(int))
+
+			for i, _ := range volumes {
+				vol := volume{
+					ContainerPath: rd.Get(fmt.Sprintf("container.0.volume.%d.container_path")).(string),
+					HostPath: rd.Get(fmt.Sprintf("container.0.volume.%d.host_path")).(string),
+					Mode: rd.Get(fmt.Sprintf("container.0.volume.%d.mode")).(string),
+				}
+				volumes[i] = vol
+			}
+
+			c.Volumes = volumes
+		}
+
+		j.Container = *c
+	}
 
 	return j
 }

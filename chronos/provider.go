@@ -27,6 +27,12 @@ func Provider() terraform.ResourceProvider {
 				Default: "",
 				Description: "HTTP basic auth password",
 			},
+			"dummy_value": &schema.Schema{
+				Type: schema.TypeString,
+				Optional: true,
+				Default: "",
+				Description: "Dummy value for dependency management",
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"chronos_job": resourceChronosJob(),
